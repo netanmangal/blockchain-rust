@@ -1,5 +1,6 @@
 use rocket::{self, launch};
 
+mod models;
 mod controllers;
 
 #[launch]
