@@ -1,7 +1,8 @@
 use rocket::{Route, routes};
 
-pub mod index;
+mod index;
+mod block;
 
 pub fn all() -> Vec<Route> {
-    return routes![index::index];
+    return routes![index::index, block::get_block_by_id];
 }
