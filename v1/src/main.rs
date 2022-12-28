@@ -1,11 +1,9 @@
-use rocket::{self, get, launch, routes};
+use rocket::{self, launch};
 
-#[get("/")]
-pub fn index() -> String {
-    return format!("Welcome to homepage!");
-}
+mod controllers;
 
 #[launch]
 fn launch() -> _ {
-    rocket::build().mount("/", routes![index])
+    rocket::build()
+        .mount("/", controllers::all())
 }
