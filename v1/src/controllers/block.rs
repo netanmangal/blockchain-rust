@@ -1,4 +1,5 @@
 use mongodb::bson::{self, doc};
+use mongodb::options::FindOneOptions;
 use mongodb::Database;
 use rocket::serde::json::Json;
 use rocket::{delete, get, post, put, State};
@@ -49,4 +50,19 @@ pub async fn create_new_block(
         .ok();
 
     return Json(new_block);
+}
+
+#[get("/block/last")]
+pub async fn get_last_block(db: &State<Database>) -> Json<Block> {
+    let block: Block = db
+        .collection::<Block>("block")
+        .find_one(
+            None,
+            FindOneOptions::builder().sort(doc! {"index": -1}).build(),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+
+    Json(block)
 }
