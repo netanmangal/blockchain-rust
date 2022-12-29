@@ -1,29 +1,29 @@
 use mongodb::bson::DateTime;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TransactionType {
-    Transfer(TransferTransaction)
+    Transfer(TransferTransaction),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TokenType {
     Native(String),
-    NonNative(String)
+    NonNative(String),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
-    creator_address: String,
-    timestamp: DateTime,
-    transaction_type: TransactionType,
-    transaction_hash: String
+    pub creator_address: String,
+    pub timestamp: DateTime,
+    pub transaction_type: TransactionType,
+    pub transaction_hash: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransferTransaction {
-    sender: String,
-    receiver: String,
-    amount: u32,
-    token: TokenType
+    pub sender: String,
+    pub receiver: String,
+    pub amount: u32,
+    pub token: TokenType,
 }
