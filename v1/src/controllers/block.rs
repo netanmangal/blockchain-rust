@@ -7,19 +7,19 @@ use rocket::{delete, get, post, put, State};
 use crate::models::block::Block;
 use crate::query::block::CreateBlockInputData;
 
-#[get("/block/get?<id>")]
-pub async fn get_block_by_id(id: u32, db: &State<Database>) -> Json<Block> {
+#[get("/block/get?<index>")]
+pub async fn get_block_by_index(index: u32, db: &State<Database>) -> Json<Block> {
     let block: Block = db
         .collection::<Block>("block")
         .find_one(
             doc! {
-                "id": id
+                "index": index
             },
             None,
         )
         .await
         .unwrap()
-        .expect("Missing block with given id.");
+        .expect("Missing block with given index.");
 
     return Json(block);
 }
@@ -65,4 +65,46 @@ pub async fn get_last_block(db: &State<Database>) -> Json<Block> {
         .unwrap();
 
     Json(block)
+}
+
+#[put("/block/update", format = "application/json", data = "<new_block>")]
+pub async fn update_block(new_block: Json<Block>, db: &State<Database>) -> String {
+    db.collection::<Block>("block")
+        .update_one(
+            doc! {
+                "index": new_block.index
+            },
+            doc! {
+                "$set": bson::to_bson( &new_block.into_inner() ).unwrap()
+            },
+            None,
+        )
+        .await
+        .ok();
+
+    format!("Block has been updated successfully!!!")
+}
+
+#[delete("/block/delete?<index>")]
+pub async fn delete_block(index: u32, db: &State<Database>) -> String {
+    db.collection::<Block>("block")
+        .delete_one(
+            doc! {
+                "index": index
+            },
+            None,
+        )
+        .await
+        .ok();
+
+    format!("Block has been deleted successfully!!!")
+}
+
+#[get("/block/count")]
+pub async fn get_block_count(db: &State<Database>) -> String {
+    db.collection::<Block>("block")
+        .count_documents(None, None)
+        .await
+        .unwrap()
+        .to_string()
 }

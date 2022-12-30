@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 
 use super::transaction::Transaction;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum BlockStatus {
     Validated,
     Pending,
     Rejected,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
     pub index: u32,
     pub creator_address: String,
