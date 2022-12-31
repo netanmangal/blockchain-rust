@@ -27,3 +27,18 @@ pub struct TransferTransaction {
     pub amount: u32,
     pub token: TokenType,
 }
+
+impl Transaction {
+    pub fn try_new(
+        creator_address: &String,
+        transaction_type: &TransactionType,
+        transaction_hash: &String,
+    ) -> Self {
+        Transaction {
+            creator_address: creator_address.clone(),
+            timestamp: DateTime::now(),
+            transaction_type: transaction_type.clone(),
+            transaction_hash: transaction_hash.clone(),
+        }
+    }
+}

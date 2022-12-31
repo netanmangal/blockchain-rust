@@ -2,6 +2,7 @@ use rocket::{routes, Route};
 
 mod block;
 mod index;
+mod transaction;
 
 pub fn all() -> Vec<Route> {
     return routes![
@@ -11,6 +12,11 @@ pub fn all() -> Vec<Route> {
         block::get_last_block,
         block::update_block,
         block::delete_block,
-        block::get_block_count
+        block::get_block_count,
+        transaction::get_transaction_by_hash,
+        transaction::create_new_transaction,
+        transaction::update_transaction,
+        transaction::delete_transaction,
+        transaction::get_transaction_count
     ];
 }
