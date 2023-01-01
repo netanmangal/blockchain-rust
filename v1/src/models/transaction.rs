@@ -1,5 +1,8 @@
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
+use serde_json;
+
+use crate::utils::hasher;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TransactionType {
@@ -29,16 +32,20 @@ pub struct TransferTransaction {
 }
 
 impl Transaction {
-    pub fn try_new(
-        creator_address: &String,
-        transaction_type: &TransactionType,
-        transaction_hash: &String,
-    ) -> Self {
+    pub fn try_new(creator_address: &String, transaction_type: &TransactionType) -> Self {
+        let timestamp: DateTime = DateTime::now();
+
+        let transaction_hash = hasher::hasher(&[
+            &creator_address,
+            &serde_json::to_string(&transaction_type).unwrap(),
+            &timestamp.to_string(),
+        ]);
+
         Transaction {
             creator_address: creator_address.clone(),
-            timestamp: DateTime::now(),
+            timestamp: timestamp,
             transaction_type: transaction_type.clone(),
-            transaction_hash: transaction_hash.clone(),
+            transaction_hash: transaction_hash,
         }
     }
 }

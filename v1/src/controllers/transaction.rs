@@ -34,8 +34,7 @@ pub async fn create_new_transaction(
 ) -> Json<Transaction> {
     let new_transaction: Transaction = Transaction::try_new(
         &transaction_data.creator_address,
-        &transaction_data.transaction_type,
-        &transaction_data.transaction_hash,
+        &transaction_data.transaction_type
     );
 
     db.collection::<Transaction>("pending_transactions")

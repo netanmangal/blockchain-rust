@@ -6,5 +6,4 @@ use crate::models::transaction::TransactionType;
 pub struct CreateTransactionInputData {
     pub creator_address: String,
     pub transaction_type: TransactionType,
-    pub transaction_hash: String,
 }

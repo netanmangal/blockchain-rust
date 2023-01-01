@@ -5,6 +5,7 @@ mod controllers;
 mod db;
 mod models;
 mod query;
+mod utils;
 
 use db::DB;
 
