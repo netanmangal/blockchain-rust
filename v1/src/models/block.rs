@@ -2,6 +2,7 @@ use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 
 use super::transaction::Transaction;
+use crate::utils::hasher;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum BlockStatus {
@@ -29,16 +30,29 @@ impl Block {
         creator_address: &String,
         nonce: u32,
         transactions: &Vec<Transaction>,
+        prev_block_hash: &String,
     ) -> Self {
+        let timestamp: DateTime = DateTime::now();
+        let merkle_root_hash: String = String::new(); // change
+
+        let block_hash: String = hasher::hasher(&[
+            &count.to_string(),
+            creator_address,
+            &timestamp.to_string(),
+            &nonce.to_string(),
+            prev_block_hash,
+            &merkle_root_hash,
+        ]);
+
         Block {
             index: count,
             creator_address: creator_address.clone(),
-            timestamp: DateTime::now(),
+            timestamp: timestamp,
             nonce: nonce,
             status: BlockStatus::Validated,
-            block_hash: String::new(),
-            prev_block_hash: String::new(),
-            merkle_root_hash: String::new(),
+            prev_block_hash: prev_block_hash.clone(),
+            merkle_root_hash: merkle_root_hash,
+            block_hash: block_hash,
             transactions: transactions.clone(),
         }
     }

@@ -37,11 +37,29 @@ pub async fn create_new_block(
         .try_into() // convert u64 into u32
         .unwrap();
 
+    let mut prev_block_hash: String = String::new();
+    if count != 0 {
+        let prev_block: Block = db
+            .collection::<Block>("block")
+            .find_one(
+                doc! {
+                    "index": count - 1
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
+        prev_block_hash = prev_block.block_hash;
+    }
+
     let new_block: Block = Block::try_new(
         count,
         &block_data.creator_address,
         block_data.nonce,
         &block_data.transactions,
+        &prev_block_hash,
     );
 
     db.collection::<Block>("block")
