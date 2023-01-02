@@ -34,7 +34,7 @@ pub async fn create_new_transaction(
 ) -> Json<Transaction> {
     let new_transaction: Transaction = Transaction::try_new(
         &transaction_data.creator_address,
-        &transaction_data.transaction_type
+        &transaction_data.transaction_type,
     );
 
     db.collection::<Transaction>("pending_transactions")
@@ -48,26 +48,33 @@ pub async fn create_new_transaction(
 #[put(
     "/transaction/update",
     format = "application/json",
-    data = "<new_transaction>"
+    data = "<updated_transaction>"
 )]
 pub async fn update_transaction(
-    new_transaction: Json<Transaction>,
+    updated_transaction: Json<Transaction>,
     db: &State<Database>,
-) -> String {
+) -> Json<Transaction> {
+    let prev_txn_hash: &String = &updated_transaction.transaction_hash;
+
+    let new_transaction: Transaction = Transaction::try_new(
+        &updated_transaction.creator_address,
+        &updated_transaction.transaction_type,
+    );
+
     db.collection::<Transaction>("pending_transactions")
         .update_one(
             doc! {
-                "transaction_hash": &new_transaction.transaction_hash
+                "transaction_hash": prev_txn_hash
             },
             doc! {
-                "$set": bson::to_bson( &new_transaction.into_inner() ).unwrap()
+                "$set": bson::to_bson( &new_transaction ).unwrap()
             },
             None,
         )
         .await
         .ok();
 
-    format!("Transaction has been updated successfully!!!")
+    Json(new_transaction)
 }
 
 #[delete("/transaction/delete?<hash>")]
