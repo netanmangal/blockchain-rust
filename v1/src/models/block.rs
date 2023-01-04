@@ -28,11 +28,11 @@ impl Block {
     pub fn try_new(
         count: u32,
         creator_address: &String,
+        timestamp: DateTime,
         nonce: u32,
         transactions: &Vec<Transaction>,
         prev_block_hash: &String,
     ) -> Self {
-        let timestamp: DateTime = DateTime::now();
         let merkle_root_hash: String = String::new(); // change
 
         let block_hash: String = hasher::hasher(&[

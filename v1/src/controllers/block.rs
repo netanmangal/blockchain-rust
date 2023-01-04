@@ -1,4 +1,4 @@
-use mongodb::bson::{self, doc};
+use mongodb::bson::{self, doc, DateTime};
 use mongodb::options::FindOneOptions;
 use mongodb::Database;
 use rocket::serde::json::Json;
@@ -6,6 +6,7 @@ use rocket::{delete, get, post, put, State};
 
 use crate::models::block::Block;
 use crate::query::block::CreateBlockInputData;
+use crate::utils::pow;
 
 #[get("/block/get?<index>")]
 pub async fn get_block_by_index(index: u32, db: &State<Database>) -> Json<Block> {
@@ -24,8 +25,8 @@ pub async fn get_block_by_index(index: u32, db: &State<Database>) -> Json<Block>
     return Json(block);
 }
 
-#[post("/block/create", format = "application/json", data = "<block_data>")]
-pub async fn create_new_block(
+#[post("/block/mine", format = "application/json", data = "<block_data>")]
+pub async fn mine_new_block(
     block_data: Json<CreateBlockInputData>,
     db: &State<Database>,
 ) -> Json<Block> {
@@ -54,20 +55,38 @@ pub async fn create_new_block(
         prev_block_hash = prev_block.block_hash;
     }
 
-    let new_block: Block = Block::try_new(
-        count,
+    let timestamp: DateTime = DateTime::now();
+    let merkle_root_hash = String::new();
+
+    let nonce: u32 = pow::proof_of_work(
+        &count.to_string(),
         &block_data.creator_address,
-        block_data.nonce,
-        &block_data.transactions,
+        &timestamp.to_string(),
         &prev_block_hash,
+        &merkle_root_hash,
     );
 
+    return create_new_block(
+        Json(Block::try_new(
+            count,
+            &block_data.creator_address,
+            timestamp,
+            nonce,
+            &block_data.transactions,
+            &prev_block_hash,
+        )),
+        db,
+    )
+    .await;
+}
+
+async fn create_new_block(block: Json<Block>, db: &State<Database>) -> Json<Block> {
     db.collection::<Block>("block")
-        .insert_one(&new_block, None)
+        .insert_one(block.clone().into_inner(), None)
         .await
         .ok();
 
-    return Json(new_block);
+    return block;
 }
 
 #[get("/block/last")]
@@ -85,15 +104,24 @@ pub async fn get_last_block(db: &State<Database>) -> Json<Block> {
     Json(block)
 }
 
-#[put("/block/update", format = "application/json", data = "<new_block>")]
-pub async fn update_block(new_block: Json<Block>, db: &State<Database>) -> String {
+#[put("/block/update", format = "application/json", data = "<updated_block>")]
+pub async fn update_block(updated_block: Json<Block>, db: &State<Database>) -> String {
+    let new_block: Block = Block::try_new(
+        updated_block.index,
+        &updated_block.creator_address,
+        updated_block.timestamp,
+        updated_block.nonce,
+        &updated_block.transactions,
+        &updated_block.prev_block_hash,
+    );
+
     db.collection::<Block>("block")
         .update_one(
             doc! {
-                "index": new_block.index
+                "index": updated_block.index
             },
             doc! {
-                "$set": bson::to_bson( &new_block.into_inner() ).unwrap()
+                "$set": bson::to_bson( &new_block ).unwrap()
             },
             None,
         )
