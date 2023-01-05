@@ -3,6 +3,7 @@ use rocket::{routes, Route};
 mod block;
 mod index;
 mod transaction;
+mod blockchain;
 
 pub fn all() -> Vec<Route> {
     return routes![
@@ -17,6 +18,7 @@ pub fn all() -> Vec<Route> {
         transaction::create_new_transaction,
         transaction::update_transaction,
         transaction::delete_transaction,
-        transaction::get_transaction_count
+        transaction::get_transaction_count,
+        blockchain::get_entire_blockchain
     ];
 }
