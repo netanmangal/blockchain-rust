@@ -18,8 +18,6 @@ pub fn proof_of_work(
     ]);
 
     while hash.chars().nth(0).unwrap() != '0' {
-        println!("{}", hash.chars().nth(0).unwrap());
-        println!("{}", hash);
         nonce += 1;
         hash = hasher::hasher(&[
             index,
