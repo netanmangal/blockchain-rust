@@ -5,8 +5,12 @@ use rocket::serde::json::Json;
 use rocket::{delete, get, post, put, State};
 
 use crate::models::block::Block;
+use crate::models::peer::Peer;
 use crate::query::block::CreateBlockInputData;
+use crate::utils::hasher::hasher;
 use crate::utils::pow;
+
+use super::peer::get_list_of_peers;
 
 #[get("/block/get?<index>")]
 pub async fn get_block_by_index(index: u32, db: &State<Database>) -> Json<Block> {
@@ -66,27 +70,69 @@ pub async fn mine_new_block(
         &merkle_root_hash,
     );
 
-    return create_new_block(
-        Json(Block::try_new(
-            count,
-            &block_data.creator_address,
-            timestamp,
-            nonce,
-            &block_data.transactions,
-            &prev_block_hash,
-        )),
-        db,
-    )
-    .await;
+    let block: Block = Block::try_new(
+        count,
+        &block_data.creator_address,
+        timestamp,
+        nonce,
+        &block_data.transactions,
+        &prev_block_hash,
+    );
+
+    create_new_block(Json(block.clone()), db).await;
+
+    let peers: Vec<Peer> = get_list_of_peers(db).await;
+
+    let reqwest_client = reqwest::Client::new();
+    for p in peers.iter() {
+        reqwest_client
+            .post("http://".to_owned() + &p.address.clone() + "/block/create")
+            .json::<Block>(&block.clone())
+            .send()
+            .await
+            .ok();
+    }
+
+    Json(block)
 }
 
-async fn create_new_block(block: Json<Block>, db: &State<Database>) -> Json<Block> {
-    db.collection::<Block>("block")
-        .insert_one(block.clone().into_inner(), None)
+#[post("/block/create", format = "application/json", data = "<block>")]
+pub async fn create_new_block(block: Json<Block>, db: &State<Database>) -> String {
+    let new_block: Block = block.into_inner();
+    let prev_block: Block = db
+        .collection::<Block>("block")
+        .find_one(
+            None,
+            FindOneOptions::builder().sort(doc! {"index": -1}).build(),
+        )
         .await
-        .ok();
+        .unwrap()
+        .unwrap();
 
-    return block;
+    println!("{:?}", prev_block);
+
+    let calc_block_hash = hasher(&[
+        &new_block.index.to_string(),
+        &new_block.creator_address,
+        &new_block.timestamp.to_string(),
+        &new_block.nonce.to_string(),
+        &new_block.prev_block_hash,
+        &new_block.merkle_root_hash,
+    ]);
+
+    if prev_block.block_hash == new_block.prev_block_hash
+        && prev_block.index + 1 == new_block.index
+        && calc_block_hash == new_block.block_hash
+    {
+        db.collection::<Block>("block")
+            .insert_one(&new_block, None)
+            .await
+            .ok();
+
+        format!("Block created successfully!!!")
+    } else {
+        format!("Block not added!!!")
+    }
 }
 
 #[get("/block/last")]
