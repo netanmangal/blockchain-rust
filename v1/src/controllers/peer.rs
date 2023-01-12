@@ -7,7 +7,7 @@ use rocket::{get, post, State};
 
 use crate::models::peer::Peer;
 
-async fn get_list_of_peers(db: &State<Database>) -> Vec<Peer> {
+pub async fn get_list_of_peers(db: &State<Database>) -> Vec<Peer> {
     return db
         .collection("peer")
         .find(None, None)

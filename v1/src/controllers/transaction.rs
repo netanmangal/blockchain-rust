@@ -1,10 +1,14 @@
 use mongodb::bson::{self, doc};
 use mongodb::Database;
+use reqwest;
 use rocket::serde::json::Json;
 use rocket::{delete, get, post, put, State};
 
+use crate::models::peer::Peer;
 use crate::models::transaction::Transaction;
 use crate::query::transaction::CreateTransactionInputData;
+
+use super::peer::get_list_of_peers;
 
 #[get("/transaction/get?<hash>")]
 pub async fn get_transaction_by_hash(hash: String, db: &State<Database>) -> Json<Transaction> {
@@ -24,11 +28,11 @@ pub async fn get_transaction_by_hash(hash: String, db: &State<Database>) -> Json
 }
 
 #[post(
-    "/transaction/create",
+    "/transaction/create-and-broadcast",
     format = "application/json",
     data = "<transaction_data>"
 )]
-pub async fn create_new_transaction(
+pub async fn create_and_broadcast_new_transaction(
     transaction_data: Json<CreateTransactionInputData>,
     db: &State<Database>,
 ) -> Json<Transaction> {
@@ -42,7 +46,36 @@ pub async fn create_new_transaction(
         .await
         .ok();
 
+    let peers: Vec<Peer> = get_list_of_peers(db).await;
+
+    let reqwest_client = reqwest::Client::new();
+    for p in peers.iter() {
+        reqwest_client
+            .post("http://".to_owned() + &p.address.clone() + "/transaction/create")
+            .json::<Transaction>(&new_transaction.clone())
+            .send()
+            .await
+            .ok();
+    }
+
     Json(new_transaction)
+}
+
+#[post(
+    "/transaction/create",
+    format = "application/json",
+    data = "<transaction>"
+)]
+pub async fn create_new_transaction(
+    transaction: Json<Transaction>,
+    db: &State<Database>,
+) -> Json<Transaction> {
+    db.collection::<Transaction>("pending_transactions")
+        .insert_one(&transaction.clone().into_inner(), None)
+        .await
+        .ok();
+
+    transaction
 }
 
 #[put(
