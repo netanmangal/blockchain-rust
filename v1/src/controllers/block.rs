@@ -82,6 +82,7 @@ pub async fn mine_new_block(
     create_new_block(Json(block.clone()), db).await;
 
     let peers: Vec<Peer> = get_list_of_peers(db).await;
+    println!("{:?}", peers);
 
     let reqwest_client = reqwest::Client::new();
     for p in peers.iter() {
@@ -98,6 +99,8 @@ pub async fn mine_new_block(
 
 #[post("/block/create", format = "application/json", data = "<block>")]
 pub async fn create_new_block(block: Json<Block>, db: &State<Database>) -> String {
+    println!("\n\nRequest to create new block received...\n\n");
+
     let new_block: Block = block.into_inner();
     let prev_block: Block = db
         .collection::<Block>("block")
@@ -129,8 +132,10 @@ pub async fn create_new_block(block: Json<Block>, db: &State<Database>) -> Strin
             .await
             .ok();
 
+        println!("Block created successfully!!!");
         format!("Block created successfully!!!")
     } else {
+        println!("Block not added!!!");
         format!("Block not added!!!")
     }
 }

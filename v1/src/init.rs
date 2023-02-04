@@ -13,7 +13,7 @@ async fn create_genesis_block(db: &Database) {
     }
 
     let genesis_block: Block = Block::try_new(
-        1,
+        0,
         &String::from("0"),
         DateTime::from_millis(0),
         0,

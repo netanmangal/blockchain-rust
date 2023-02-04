@@ -36,6 +36,7 @@ pub fn is_chain_valid(chain: &Vec<Block>) -> bool {
 
         // check prev block hash with current_block.prev_hash
         if *chain[i - 1].block_hash != block.prev_block_hash {
+            println!("\nPrev block hash not matching {}\n", i);
             return false;
         }
 
@@ -50,29 +51,26 @@ pub fn is_chain_valid(chain: &Vec<Block>) -> bool {
         ]);
 
         if b_hash != block.block_hash {
+            println!("\nBlock has is not valid {}\n", i);
             return false;
-        }
-
-        // check all txn_hashes are valid
-        for txn in block.transactions.iter() {
-            let txn_hash: String = hasher(&[
-                &txn.creator_address,
-                &serde_json::to_string(&txn.transaction_type).unwrap(),
-                &txn.timestamp.to_string(),
-            ]);
-
-            if txn_hash != txn.transaction_hash {
-                return false;
-            }
         }
     }
 
     return true;
 }
 
-#[get("/consensus")]
+#[get("/blockchain/consensus")]
 pub async fn perform_consensus(db: &State<Database>) -> String {
     let peers: Vec<Peer> = get_list_of_peers(db).await;
+    let mut longest_chain: Vec<Block> = Vec::<Block>::new();
+
+    let current_block_count: usize = db
+        .collection::<Block>("block")
+        .count_documents(None, None)
+        .await
+        .unwrap()
+        .try_into()
+        .unwrap();
 
     let reqwest_client = reqwest::Client::new();
     for p in peers.iter() {
@@ -85,11 +83,24 @@ pub async fn perform_consensus(db: &State<Database>) -> String {
             .await
             .unwrap();
 
-        println!("{:#?}", incoming_chain);
-
-        println!("Chain is valid?: {}", is_chain_valid(&incoming_chain));
+        if is_chain_valid(&incoming_chain) {
+            if incoming_chain.len() > longest_chain.len()
+                && incoming_chain.len() > current_block_count
+            {
+                longest_chain = incoming_chain;
+            }
+        }
     }
 
-    // return format!("Chain has been updated from {}", peer);
-    return format!("Chain has not been updated.");
+    if longest_chain.len() > 1 {
+        db.collection::<Block>("block").drop(None).await.ok();
+        db.collection::<Block>("block")
+            .insert_many(longest_chain, None)
+            .await
+            .ok();
+
+        return format!("Chain has been updated.");
+    } else {
+        return format!("Chain has not been updated.");
+    }
 }
