@@ -23,6 +23,7 @@ pub fn all() -> Vec<Route> {
         transaction::delete_transaction,
         transaction::get_transaction_count,
         blockchain::get_entire_blockchain,
+        blockchain::perform_consensus,
         peer::get_peers_list,
         peer::register_and_broadcast_node,
         peer::register_new_peer,
