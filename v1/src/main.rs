@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use mongodb::Database;
 use rocket::{self, launch, Config};
 
 mod controllers;
@@ -6,6 +7,7 @@ mod db;
 mod models;
 mod query;
 mod utils;
+mod init;
 
 use db::DB;
 
@@ -26,9 +28,13 @@ async fn launch() -> _ {
     let database_name: String =
         dotenv::var("DATABASE_NAME").expect("Expected env variable: DATABASE_NAME") + "-" + port;
 
+    let database_conn: Database = db.client.database(&database_name);
+
+    init::init(&database_conn).await;
+
     let rocket_figment = Config::figment().merge(("port", port.parse::<u16>().unwrap()));
 
     rocket::custom(rocket_figment)
         .mount("/", controllers::all())
-        .manage(db.client.database(&database_name))
+        .manage(database_conn)
 }

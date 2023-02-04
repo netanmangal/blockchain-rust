@@ -1,7 +1,7 @@
 use rocket::{routes, Route};
 
 mod block;
-mod blockchain;
+pub mod blockchain;
 mod index;
 mod peer;
 mod transaction;

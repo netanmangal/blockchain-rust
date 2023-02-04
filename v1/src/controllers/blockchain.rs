@@ -27,7 +27,7 @@ pub async fn get_entire_blockchain(db: &State<Database>) -> Json<Vec<Block>> {
 // #[get("/blockchain/isChainValid")]
 /// this is the helper function
 /// this doesn't needs to be route
-pub async fn is_chain_valid(chain: &Vec<Block>) -> bool {
+pub fn is_chain_valid(chain: &Vec<Block>) -> bool {
     for (i, block) in chain.iter().enumerate() {
         // skip genesis block
         if i == 0 {
@@ -76,7 +76,7 @@ pub async fn perform_consensus(db: &State<Database>) -> String {
 
     let reqwest_client = reqwest::Client::new();
     for p in peers.iter() {
-        let incoming_blocks: Vec<Block> = reqwest_client
+        let incoming_chain: Vec<Block> = reqwest_client
             .get("http://".to_owned() + &p.address.clone() + "/blockchain/get")
             .send()
             .await
@@ -85,7 +85,9 @@ pub async fn perform_consensus(db: &State<Database>) -> String {
             .await
             .unwrap();
 
-        println!("{:#?}", incoming_blocks);
+        println!("{:#?}", incoming_chain);
+
+        println!("Chain is valid?: {}", is_chain_valid(&incoming_chain));
     }
 
     // return format!("Chain has been updated from {}", peer);
